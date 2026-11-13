@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Тас дәуіріне саяхат</title>
+<style>
+body{margin:0;overflow:hidden;background:#20251c;color:white;font-family:Georgia}
+#scene{width:100vw;height:100vh}
+#start{position:fixed;inset:0;background:#25271e;display:grid;place-content:center;text-align:center;z-index:5}
+#start h1{font-size:42px;color:#e6c28a}
+button{padding:14px 22px;border:1px solid #d5ad6b;border-radius:25px;background:#79552e;color:white;cursor:pointer}
+#info{display:none;position:fixed;right:15px;top:15px;width:min(330px,80vw);max-height:75vh;overflow:auto;background:#241f19ee;border:1px solid #c8a36b;border-radius:16px;padding:18px;z-index:4}
+#info h2{color:#eac58b}
+#hint{position:fixed;bottom:15px;left:0;right:0;text-align:center;background:#181a16aa;padding:12px;font-size:13px;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="start">
+<h1>ТАС ДӘУІРІНЕ<br>САЯХАТ</h1>
+<p>Ежелгі әлемге саяхат жаса!</p>
+<button id="go">САЯХАТТЫ БАСТАУ</button>
+</div>
+
+<div id="info">
+<button onclick="document.getElementById('info').style.display='none'">Жабу ✕</button>
+<h2 id="title"></h2>
+<p id="desc"></p>
+</div>
+
+<div id="hint">Экранды сүйреп 360° қара · Заттарды басып көр</div>
+
+<script type="module">
+import * as THREE from
+'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import {OrbitControls} from
+'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x9ba58a);
+scene.fog=new THREE.Fog(0x9ba58a,20,65);
+
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000);
+camera.position.set(0,6,16);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+document.getElementById('scene').appendChild(renderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.maxPolarAngle=Math.PI/2;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x51412e,2));
+const sun=new THREE.DirectionalLight(0xffd8a0,2);
+sun.position.set(-10,20,10);
+sun.castShadow=true;
+scene.add(sun);
+
+function material(color){
+return new THREE.MeshStandardMaterial({color,roughness:.9});
+}
+
+const ground=new THREE.Mesh(
+new THREE.PlaneGeometry(150,150),
+material(0x777454)
+);
+ground.rotation.x=-Math.PI/2;
+ground.receiveShadow=true;
+scene.add(ground);
+
+const objects=[];
+
+const data={
+stone:['Тас құралдары','Палеолит дәуірінде адамдар тасты өңдеп, өткір қырлар жасауды үйренді. Шақпақ тастан шапқыш, қырғыш және кескіш құралдар дайындады. Олар аң аулауға, тері өңдеуге және күнделікті еңбекке пайдаланылды.'],
+fire:['Отты игеру','От адамға жылынуға, жарық алуға, тағам пісіруге және жыртқыштардан қорғануға көмектесті. Адамдар табиғи отты сақтап, кейін шақпақ тас пен пириттен ұшқын шығару немесе ағашты үйкеу тәсілдерін қолданды.'],
+person:['Алғашқы адамдар','Ежелгі адамдар топ болып өмір сүрді. Олар аң аулады, өсімдік өнімдерін жинады, баспана жасады. Аң терісінен киім тігіп, қарапайым еңбек құралдарын пайдаланды.'],
+cave:['Үңгірлер','Үңгірлер суықтан, желден және жауын-шашыннан қорғануға көмектесті. Бірақ адамдар тек үңгірлерде ғана тұрған жоқ, уақытша баспаналар да салды.'],
+mammoth:['Мамонт','Мамонттар мұз дәуірінде өмір сүрген ірі жануарлар. Олардың қалың жүні мен ұзын иілген азу тістері болған. Кейбір ежелгі адамдар мамонттарды аулаған.'],
+spear:['Найза','Найза аң аулау мен қорғануға пайдаланылды. Оның ағаш сабына өңделген тастан, сүйектен немесе басқа материалдан жасалған ұш бекітілді.']
+};
+
+function add(obj,key){
+obj.userData.key=key;
+objects.push(obj);
+scene.add(obj);
+return obj;
+}
+
+function rock(x,z,size=1){
+const r=add(new THREE.Mesh(
+new THREE.DodecahedronGeometry(size,1),
+material(0xaaa697)
+),'stone');
+r.position.set(x,size*.7,z);
+r.scale.y=.7;
+r.castShadow=true;
+return r;
+}
+
+rock(4,2,1.2);
+rock(5,3,.6);
+rock(-5,-2,1.5);
+
+// Үңгір
+const cave=add(new THREE.Mesh(
+new THREE.SphereGeometry(4,24,16,0,Math.PI*2,0,Math.PI/2),
+material(0x514d42)
+),'cave');
+cave.position.set(-9,0,-7);
+cave.scale.set(1.5,1,1.3);
+
+// От
+const fire=add(new THREE.Group(),'fire');
+fire.position.set(0,0,1);
+
+for(let i=0;i<5;i++){
+const log=new THREE.Mesh(
+new THREE.CylinderGeometry(.12,.16,1.7,8),
+material(0x54351d)
+);
+log.rotation.z=Math.PI/2;
+log.rotation.y=i*.7;
+log.position.y=.15;
+fire.add(log);
+}
+
+const flame=new THREE.Mesh(
+new THREE.ConeGeometry(.5,1.7,8),
+new THREE.MeshBasicMaterial({color:0xff8525})
+);
+flame.position.y=1;
+fire.add(flame);
+
+const fireLight=new THREE.PointLight(0xff8025,4,14);
+fireLight.position.set(0,1,1);
+scene.add(fireLight);
+
+// Адамдар
+const people=[];
+
+function createPerson(x,z){
+const group=new THREE.Group();
+group.position.set(x,0,z);
+
+const body=new THREE.Mesh(
+new THREE.CapsuleGeometry(.4,.8,4,8),
+material(0x79573c)
+);
+body.position.y=1.3;
+group.add(body);
+
+const head=new THREE.Mesh(
+new THREE.SphereGeometry(.3,16,16),
+material(0xb47c57)
+);
+head.position.y=2.1;
+group.add(head);
+
+const hair=new THREE.Mesh(
+new THREE.SphereGeometry(.31,12,10),
+material(0x30241d)
+);
+hair.position.y=2.27;
+group.add(hair);
+
+for(const side of [-1,1]){
+const arm=new THREE.Mesh(
+new THREE.CapsuleGeometry(.12,.65,4,8),
+material(0xb47c57)
+);
+arm.position.set(side*.45,1.35,0);
+arm.rotation.z=side*.3;
+group.add(arm);
+
+const leg=new THREE.Mesh(
+new THREE.CapsuleGeometry(.15,.6,4,8),
+material(0x57402e)
+);
+leg.position.set(side*.2,.4,0);
+group.add(leg);
+}
+
+add(group,'person');
+people.push(group);
+}
+
+createPerson(-2,3);
+createPerson(2,4);
+createPerson(-4,-3);
+
+// Мамонт
+const mammoth=add(new THREE.Group(),'mammoth');
+mammoth.position.set(9,0,-8);
+
+const fur=material(0x65503c);
+const torso=new THREE.Mesh(new THREE.SphereGeometry(1.3,16,12),fur);
+torso.scale.set(1.5,1,1);
+torso.position.y=1.6;
+mammoth.add(torso);
+
+const head=new THREE.Mesh(new THREE.SphereGeometry(.7,16,12),fur);
+head.position.set(1.6,1.9,0);
+mammoth.add(head);
+
+const trunk=new THREE.Mesh(
+new THREE.CapsuleGeometry(.18,.8,4,8),fur);
+trunk.position.set(2,1.2,0);
+trunk.rotation.z=-.3;
+mammoth.add(trunk);
+
+// Найза
+const spear=add(new THREE.Group(),'spear');
+spear.position.set(7,0,4);
+
+const shaft=new THREE.Mesh(
+new THREE.CylinderGeometry(.04,.07,3,8),
+material(0x76502e)
+);
+shaft.rotation.z=Math.PI/2;
+spear.add(shaft);
+
+const tip=new THREE.Mesh(
+new THREE.ConeGeometry(.18,.6,8),
+material(0xb3ad9c)
+);
+tip.position.x=1.7;
+tip.rotation.z=-Math.PI/2;
+spear.add(tip);
+
+// Ағаштар
+for(let i=0;i<65;i++){
+const x=(Math.random()-.5)*65;
+const z=(Math.random()-.5)*55;
+if(Math.abs(x)<8 && Math.abs(z)<8)continue;
+
+const tree=new THREE.Group();
+const trunk=new THREE.Mesh(
+new THREE.CylinderGeometry(.15,.25,2.5,7),
+material(0x61452d)
+);
+trunk.position.y=1.2;
+tree.add(trunk);
+
+const crown=new THREE.Mesh(
+new THREE.IcosahedronGeometry(1.5,1),
+material(0x45583a)
+);
+crown.position.y=3;
+tree.add(crown);
+
+tree.position.set(x,0,z);
+scene.add(tree);
+}
+
+// Ақпарат терезесі
+const raycaster=new THREE.Raycaster();
+const pointer=new THREE.Vector2();
+
+renderer.domElement.addEventListener('click',e=>{
+pointer.x=e.clientX/innerWidth*2-1;
+pointer.y=-(e.clientY/innerHeight)*2+1;
+raycaster.setFromCamera(pointer,camera);
+
+const hits=raycaster.intersectObjects(objects,true);
+if(!hits.length)return;
+
+let obj=hits[0].object;
+while(obj&&!obj.userData.key)obj=obj.parent;
+if(!obj)return;
+
+const info=data[obj.userData.key];
+if(!info)return;
+
+document.getElementById('title').textContent=info[0];
+document.getElementById('desc').textContent=info[1];
+document.getElementById('info').style.display='block';
+});
+
+// Дыбыс
+let audio;
+document.getElementById('go').onclick=()=>{
+document.getElementById('start').style.display='none';
+audio=new AudioContext();
+const master=audio.createGain();
+master.gain.value=.025;
+master.connect(audio.destination);
+
+[110,164,220].forEach(freq=>{
+const osc=audio.createOscillator();
+osc.frequency.value=freq;
+osc.type='sine';
+osc.connect(master);
+osc.start();
+});
+};
+
+function animate(t){
+requestAnimationFrame(animate);
+flame.scale.y=1+.15*Math.sin(t*.015);
+fireLight.intensity=3.5+Math.sin(t*.02);
+people.forEach((p,i)=>{
+p.rotation.y=.15*Math.sin(t*.001+i);
+p.position.y=.04*Math.sin(t*.003+i);
+});
+mammoth.position.x=9+Math.sin(t*.0003);
+controls.update();
+renderer.render(scene,camera);
+}
+animate(0);
+
+addEventListener('resize',()=>{
+camera.aspect=innerWidth/innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>
